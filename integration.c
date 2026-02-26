@@ -95,7 +95,7 @@ double integrate(double (*f)(double), double a, double b, int N, QuadFormula* qf
 
 double integrate_dx(double (*f)(double), double a, double b, double dx, QuadFormula* qf)
 {
-    int N = (int) round( abs(b-a)/dx );
+    int N = (int) round( fabs(b-a)/dx );
     if (N == 0) N = 1;
     return integrate(f, a, b, N, qf);
 }
