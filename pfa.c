@@ -38,8 +38,10 @@ double PHI(double x)
 */
 double optionPrice(Option* option)
 {
-    double z0 = (log(option->K / option->S0) - (option->mu - option->sig * option->sig / 2) * option->T) / option->sig * sqrt(option->T);
+    double z0 = (log(option->K / option->S0) - (option->mu - option->sig * option->sig / 2) * option->T) / (option->sig * sqrt(option->T));
+    // printf("z0 = %f\n", z0);
     if (option->type == CALL) {
+        // printf("int = %f\n", PHI(option->sig * sqrt(option->T) - z0));
         return option->S0 * exp(option->mu * option->T) * PHI(option->sig * sqrt(option->T) - z0) - option->K * PHI(-z0);
     } else if (option->type == PUT) {
         return option->K * PHI(z0) - option->S0 * exp(option->mu * option->T) * PHI(z0 - option->sig * sqrt(option->T));
@@ -57,7 +59,9 @@ double optionPrice(Option* option)
 */
 double clientPDF_X(InsuredClient* client, double x)
 {
-    return 0.0;
+    if (x <= 0.0) return 0.0;
+    double fact = 1 / (client->s * x);
+    return fact * phi((log(x) - client->m) / client->s);
 }
 
 
@@ -66,7 +70,8 @@ double clientPDF_X(InsuredClient* client, double x)
 */
 double clientCDF_X(InsuredClient* client, double x)
 {
-    return 0.0;
+    if (x <= 0.0) return 0.0;
+    return PHI((log(x) - client->m) / client->s);
 }
 
 
@@ -104,7 +109,7 @@ static double localProductPDF(double t)
 static double localPDF_X1X2(double x)
 {
     localX = x;
-    return 0.0;
+    return integrate_dx(localProductPDF, 0, x, pfa_dt, &pfaQF);
 } 
 
 
@@ -117,10 +122,10 @@ static double localPDF_X1X2(double x)
 */
 double clientPDF_X1X2(InsuredClient* client, double x)
 {
-if ( x<=0 ) return 0.0;
-
-localClient = client;
-    return localPDF_X1X2(x);
+    if ( x<=0 ) return 0.0;
+    localClient = client;
+    localX = x;
+    return integrate_dx(localProductPDF, 0, x, pfa_dt, &pfaQF);
 }
 
 
@@ -130,9 +135,9 @@ localClient = client;
 */
 double clientCDF_X1X2(InsuredClient* client, double x)
 {
+    if (x <= 0) return 0.0;
     localClient = client;
-
-    return 0.0;
+    return integrate_dx(localPDF_X1X2, 0, x, pfa_dt, &pfaQF);
 }
 
 
@@ -142,7 +147,7 @@ double clientCDF_X1X2(InsuredClient* client, double x)
 */
 double clientCDF_S(InsuredClient* client, double x)
 {
-    return 0.0;
+    return client->p[0] + client->p[1] * clientCDF_X(client, x) + client->p[2] * clientCDF_X1X2(client, x);
 }
 
 
